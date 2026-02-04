@@ -1,0 +1,25 @@
+{
+  "presets": [
+    {
+      "name": "Earth",
+      "radius": 6371000,
+      "image": "assets/images/planets/earth.png",
+      "mass": 5.972e24,
+      "light_emission": 0
+    },     
+    {
+      "name": "Gargantua",
+      "radius": 150000000000,
+      "image": "assets/images/blackHoles/bHole1.png",
+      "mass": 1.989e38,
+      "light_emission": 200
+    },
+    {
+      "name": "Sun",
+      "radius": 696340000,
+      "image": "assets/images/stars/sun.png",
+      "mass": 1.989e30,
+      "light_emission": 10
+    }
+  ]
+}

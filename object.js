@@ -1,58 +1,58 @@
-
+import Vector3 from "./vector3.js";
+import { vectorDistance } from "./vector3.js";
+import { addVectors } from "./vector3.js";
+import SETTINGS from "./settings.js";
 
 export default class object {
-    constructor(x, y, z, color, mass){
-        let outPosition = new Vector3(0, 0, 0);
-        
-        function update(deltaTime, otherObjects){
-             
+    constructor(x, y, z, name, radius, image, mass){
+        this.position = new Vector3(0, 0, 0);
+        this.velocity = new Vector3(0, 0, 0);
+        this.position.x = x; this.position.y = y; this.position.z = z; this.name = name; this.radius = radius; this.image = image; this.mass = mass;
+    }
+    
+    gravity(otherObjects, timeMultiplier) {
+        const G = SETTINGS.GRAVITATIONAL_CONSTANT;
+        const dt = (1 / SETTINGS.FPS) * timeMultiplier;
+        const scale = SETTINGS.DISTANCE_SCALE;
+
+        for (let other of otherObjects) {
+            if (other === this) continue;
+
+            const distSim = vectorDistance(this.position, other.position);
+            const distMeters = distSim * scale;
+
+            const softening = 1000000;
+            const accelerationMeters = (G * other.mass) / (Math.pow(distMeters, 2) + softening);
+
+            const accelerationSim = accelerationMeters / scale;
+
+            if (distSim < 0.000001) continue;
+
+            const direction = new Vector3(
+                (other.position.x - this.position.x) / distSim,
+                (other.position.y - this.position.y) / distSim,
+                (other.position.z - this.position.z) / distSim
+            );
+
+            const accelerationVec = new Vector3(
+                direction.x * accelerationSim * dt,
+                direction.y * accelerationSim * dt,
+                direction.z * accelerationSim * dt
+            );
+
+            this.velocity = addVectors(this.velocity, accelerationVec);
         }
     }
+
+    frame(timeMultiplier = 1) {
+        const dt = (1 / SETTINGS.FPS) * timeMultiplier;
+
+        const movementVec = new Vector3(
+            this.velocity.x * dt,
+            this.velocity.y * dt,
+            this.velocity.z * dt
+        );
+
+        this.position = addVectors(this.position, movementVec);
+    }
 }
-
-
-// To calculate the movement vector when multiple gravitational forces are applied, you'll want to use vector addition of individual gravitational forces.
-// Here's the approach:
-// The Core Equation
-// F_total = F₁ + F₂ + F₃ + ... + Fₙ
-// Where each force F is calculated using Newton's law of gravitation:
-// F = G × (m₁ × m₂) / r²
-// But since force is a vector, you need to calculate it in component form for each object.
-// Step-by-Step Process
-// For each gravitational source:
-
-// Calculate the direction vector from your object to the gravitational source:
-
-// dx = x_source - x_object
-// dy = y_source - y_object
-// (dz = z_source - z_object, if in 3D)
-
-
-// Calculate the distance: r = √(dx² + dy² + dz²)
-// Calculate the force magnitude: F_mag = G × (m₁ × m₂) / r²
-// Get the unit direction vector:
-
-// unit_x = dx / r
-// unit_y = dy / r
-// unit_z = dz / r
-
-
-// Get force components:
-
-// Fx = F_mag × unit_x
-// Fy = F_mag × unit_y
-// Fz = F_mag × unit_z
-
-
-// Sum all forces from all gravitational sources:
-
-// F_total_x = ΣFx
-// F_total_y = ΣFy
-// F_total_z = ΣFz
-
-
-// Calculate acceleration: a = F_total / m_object
-// Update velocity: v_new = v_old + a × Δt
-// Update position: pos_new = pos_old + v_new × Δt
-
-// This gives you the movement vector resulting from multiple gravitational influences simultaneously.

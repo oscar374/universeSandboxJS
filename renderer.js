@@ -1,5 +1,5 @@
 import SETTINGS from "./settings.js";
-import Vector3 from "./vector3.js";
+import Vector3, { vectorDistance } from "./vector3.js";
 import object from "./object.js";
 
 let width = window.innerWidth;
@@ -10,10 +10,10 @@ const ctx = canvas.getContext('2d');
 let leftUI = document.getElementById("leftUI");
 let rightUI = document.getElementById("rightUI");
 let cameraPosText = document.getElementById("cameraPos");
+let objectPresetContainer = document.getElementById("objectPresetContainer");
 //############## HTML ELEMENTS #################
 
 const imageCache = {};
-
 
 // ############# Image loading ###############
 function getPreloadedImage(url) {
@@ -28,7 +28,6 @@ function getPreloadedImage(url) {
     return imageCache[url];
 }
 // ############# Image loading ###############
-
 
 let linePositions = [
     {
@@ -65,27 +64,24 @@ function isPressed(code) {
 
 // ############### INPUT HANDLING ###############
 
-
 //################ START AND UPDATE functions ################
 
+let sceneObjects = [];
 
 function start(){
     setupKeys();
     resizeCanvas();
     clear();
+    fetchPresets();
 }
 start();
 
 function update(){
     resizeCanvas();
     clear();
-    if (debugLines)
-        displayLines();
     updateCameraPosText();
-
-    point(toScreen(project(new Vector3(-100, 600, 2000))), 10000, 'assets/images/blackHoles/bHole1.png');
-    point(toScreen(project(new Vector3(30, 30, 30))), 20, 'assets/images/planets/earth.png');
-
+    renderSceneObjects();
+    if (debugLines) displayLines();
     movement();
 }
 
@@ -111,25 +107,40 @@ function displayLines(){
     });
 }
 
+//################ DRAWING AND RENDERING FUNCTIONS ################
+
+function renderSceneObjects(){
+
+    const sortedObjects = [...sceneObjects].sort((a, b) => {
+        const distA = vectorDistance(cameraPosition, new Vector3(a.position.x, a.position.y, a.position.z));
+        const distB = vectorDistance(cameraPosition, new Vector3(b.position.x, b.position.y, b.position.z));     
+        return distB - distA; 
+    });
+    
+    sortedObjects.forEach(e => {
+        renderObject(e);
+    });
+}
+
+function renderObject(obj){
+    const projected = project(obj.position);
+    
+    if (projected) {
+        const visualRadius = obj.radius / SETTINGS.DISTANCE_SCALE; 
+        point(toScreen(projected), visualRadius, obj.image);
+    }
+
+    let tm = 1; 
+    obj.frame(tm);
+    obj.gravity(sceneObjects, tm);
+}
+
 function drawLine({x: x1, y: y1}, {x: x2, y: y2}){
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.strokeStyle = SETTINGS.LINE_COLOR;
     ctx.stroke();
-}
-
-function resizeCanvas() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-
-    canvas.height = height;
-    canvas.width = width;
-}
-
-function clear(){
-    ctx.fillStyle = SETTINGS.BACKGROUND;
-    ctx.fillRect(0, 0, width, height);
 }
 
 function point({x, y, depth}, radius, imageURL) {
@@ -150,6 +161,21 @@ function point({x, y, depth}, radius, imageURL) {
             size             
         );
     }
+}
+
+//################ DRAWING AND RENDERING FUNCTIONS ################
+
+function resizeCanvas() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.height = height;
+    canvas.width = width;
+}
+
+function clear(){
+    ctx.fillStyle = SETTINGS.BACKGROUND;
+    ctx.fillRect(0, 0, width, height);
 }
 
 function toScreen(p) {
@@ -201,12 +227,10 @@ function movement(){
     }
 }
 
-
-
-//####################### FUNCTIONAL KEYS HANDLES ##########################
+//####################### FUNCTIONAL KEYS HANDLES AND UI ##########################
 
 let UIopen = false;
-let debugLines = true;
+let debugLines = false;
 
 document.addEventListener('keydown', function(event) {
     if(event.keyCode == "81"){  // Q
@@ -225,8 +249,49 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+function readTextFile(file, callback) {
+    var rawFile = new XMLHttpRequest();
+    rawFile.overrideMimeType("application/json");
+    rawFile.open("GET", file, true);
+    rawFile.onreadystatechange = function() {
+        if (rawFile.readyState === 4 && rawFile.status == "200") {
+            callback(rawFile.responseText);
+        }
+    }
+    rawFile.send(null);
+}
 
 
+let availablePresets = [];
+
+function fetchPresets(){
+    readTextFile("assets/json/presets.json", function(text){
+        var data = JSON.parse(text);
+        availablePresets = data.presets || [];
+        displayPresets(data);
+    });
+}
+
+function displayPresets(data){
+    objectPresetContainer.innerHTML = "";
+    data.presets.forEach(element => {
+        const button = document.createElement('div');
+        button.className = 'presetButton';
+        button.style.backgroundImage = "url(" + element.image + ")";
+        button.addEventListener('click', () => {
+            addObjectFromPreset(element.name);
+        });
+        objectPresetContainer.appendChild(button);
+    });
+}
+
+function addObjectFromPreset(presetName){
+    const preset = availablePresets.find(p => p.name === presetName);
+    if (preset) {
+        let objtoAdd = new object(cameraPosition.x, cameraPosition.y, cameraPosition.z + 30, preset.name, preset.radius, preset.image, preset.mass)
+        sceneObjects.push(objtoAdd);
+    }
+}
 
 function updateCameraPosText(){
     cameraPosText.innerHTML = "Position: X:" + cameraPosition.x + " Y:" + cameraPosition.y + " Z:" + cameraPosition.z;
