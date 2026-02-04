@@ -13,11 +13,14 @@ let cameraPosText = document.getElementById("cameraPos");
 let objectPresetContainer = document.getElementById("objectPresetContainer");
 let spawnDistanceInput = document.getElementById("spawnDistanceInput");
 let timeMultiplierInput = document.getElementById("timeMultiplierInput");
+let cameraSpeedMultiplierInput = document.getElementById("cameraSpeedMultiplierInput"); 
+let objectContainer = document.getElementById("objectContainer");
 //############## HTML ELEMENTS #################
 
 const imageCache = {};
 let spawnDistance = 10;
 let timeMultiplier = 1;
+let cameraSpeedMultiplier = 1;
 
 // ############# Image loading ###############
 
@@ -89,6 +92,7 @@ function update(){
     renderSceneObjects();
     if (debugLines) displayLines();
     movement();
+    displayObjects();
 }
 
 setInterval(() => {
@@ -130,14 +134,23 @@ function renderSceneObjects(){
 
 function renderObject(obj){
     const projected = project(obj.position);
-    
+    let visualRadius = null;
+
     if (projected) {
-        const visualRadius = obj.radius / SETTINGS.DISTANCE_SCALE; 
+        visualRadius = obj.radius / SETTINGS.DISTANCE_SCALE; 
         point(toScreen(projected), visualRadius, obj.image);
     }
 
     obj.frame(timeMultiplier);
     obj.gravity(sceneObjects, timeMultiplier);
+
+    if(obj.flare != ""){
+        renderObjectFlare(obj, projected, visualRadius);
+    }
+}
+
+function renderObjectFlare(obj, projected, visualRadius){
+    point(toScreen(projected), visualRadius * 100, obj.flare);
 }
 
 function drawLine({x: x1, y: y1}, {x: x2, y: y2}){
@@ -212,23 +225,23 @@ function project(p){
 
 function movement(){
     if (isPressed("KeyD")) {
-        cameraPosition.x += SETTINGS.CAMERA_SPEED;
+        cameraPosition.x += SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
     if (isPressed("KeyA")) {
-        cameraPosition.x -= SETTINGS.CAMERA_SPEED;
+        cameraPosition.x -= SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
 
     if (isPressed("KeyW")) {
-        cameraPosition.z += SETTINGS.CAMERA_SPEED;
+        cameraPosition.z += SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
     if (isPressed("KeyS")) {
-        cameraPosition.z -= SETTINGS.CAMERA_SPEED;
+        cameraPosition.z -= SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
     if (isPressed("Space")) {
-        cameraPosition.y += SETTINGS.CAMERA_SPEED;
+        cameraPosition.y += SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
     if (isPressed("ShiftLeft")) {
-        cameraPosition.y -= SETTINGS.CAMERA_SPEED;
+        cameraPosition.y -= SETTINGS.CAMERA_SPEED * cameraSpeedMultiplier;
     }
 }
 
@@ -293,13 +306,20 @@ function displayPresets(data){
 function addObjectFromPreset(presetName){
     const preset = availablePresets.find(p => p.name === presetName);
     if (preset) {
-        let objtoAdd = new object(cameraPosition.x, cameraPosition.y, cameraPosition.z + spawnDistance, preset.name, preset.radius, preset.image, preset.mass)
+        let objtoAdd = new object(cameraPosition.x, cameraPosition.y, cameraPosition.z + spawnDistance, preset.name, preset.radius, preset.image, preset.mass, preset.flare)
         sceneObjects.push(objtoAdd);
     }
 }
 
 function updateCameraPosText(){
     cameraPosText.innerHTML = "Position: X:" + cameraPosition.x + " Y:" + cameraPosition.y + " Z:" + cameraPosition.z;
+}
+
+function displayObjects(){
+    objectContainer.innerHTML = "";
+    sceneObjects.forEach(element => {
+        objectContainer.innerHTML += `<div class='spawnedObject'> ${element.name} | <button>Follow</button> </div>`;
+    });
 }
 
 //################ INPUT EVENT LISTENERS ##############
@@ -309,12 +329,17 @@ spawnDistanceInput.addEventListener('input', function(event) {
 });
 
 timeMultiplierInput.addEventListener('input', function(event) {
-    let timeMultiplierValue = parseFloat(event.target.value);
-    if(timeMultiplierValue == 0 || timeMultiplierValue == null){
+    let value = event.target.value;
+    let timeMultiplierValue = parseFloat(value);
+    if (!value || isNaN(timeMultiplierValue) || timeMultiplierValue === 0) {
         timeMultiplier = 1;
-    }else {
+    } else {
         timeMultiplier = timeMultiplierValue;
     }
+});
+
+cameraSpeedMultiplierInput.addEventListener('input', function(event) {
+    cameraSpeedMultiplier = parseFloat(event.target.value);
 });
 
 //################ INPUT EVENT LISTENERS ##############

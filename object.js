@@ -4,10 +4,10 @@ import { addVectors } from "./vector3.js";
 import SETTINGS from "./settings.js";
 
 export default class object {
-    constructor(x, y, z, name, radius, image, mass){
+    constructor(x, y, z, name, radius, image, mass, flare){
         this.position = new Vector3(0, 0, 0);
         this.velocity = new Vector3(0, 0, 0);
-        this.position.x = x; this.position.y = y; this.position.z = z; this.name = name; this.radius = radius; this.image = image; this.mass = mass;
+        this.position.x = x; this.position.y = y; this.position.z = z; this.name = name; this.radius = radius; this.image = image; this.mass = mass; this.flare = flare;
     }
     
     gravity(otherObjects, timeMultiplier) {
