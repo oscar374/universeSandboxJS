@@ -11,11 +11,16 @@ let leftUI = document.getElementById("leftUI");
 let rightUI = document.getElementById("rightUI");
 let cameraPosText = document.getElementById("cameraPos");
 let objectPresetContainer = document.getElementById("objectPresetContainer");
+let spawnDistanceInput = document.getElementById("spawnDistanceInput");
+let timeMultiplierInput = document.getElementById("timeMultiplierInput");
 //############## HTML ELEMENTS #################
 
 const imageCache = {};
+let spawnDistance = 10;
+let timeMultiplier = 1;
 
 // ############# Image loading ###############
+
 function getPreloadedImage(url) {
     if (!imageCache[url]) {
         const img = new Image();
@@ -27,6 +32,7 @@ function getPreloadedImage(url) {
     }
     return imageCache[url];
 }
+
 // ############# Image loading ###############
 
 let linePositions = [
@@ -130,9 +136,8 @@ function renderObject(obj){
         point(toScreen(projected), visualRadius, obj.image);
     }
 
-    let tm = 1; 
-    obj.frame(tm);
-    obj.gravity(sceneObjects, tm);
+    obj.frame(timeMultiplier);
+    obj.gravity(sceneObjects, timeMultiplier);
 }
 
 function drawLine({x: x1, y: y1}, {x: x2, y: y2}){
@@ -288,7 +293,7 @@ function displayPresets(data){
 function addObjectFromPreset(presetName){
     const preset = availablePresets.find(p => p.name === presetName);
     if (preset) {
-        let objtoAdd = new object(cameraPosition.x, cameraPosition.y, cameraPosition.z + 30, preset.name, preset.radius, preset.image, preset.mass)
+        let objtoAdd = new object(cameraPosition.x, cameraPosition.y, cameraPosition.z + spawnDistance, preset.name, preset.radius, preset.image, preset.mass)
         sceneObjects.push(objtoAdd);
     }
 }
@@ -296,3 +301,21 @@ function addObjectFromPreset(presetName){
 function updateCameraPosText(){
     cameraPosText.innerHTML = "Position: X:" + cameraPosition.x + " Y:" + cameraPosition.y + " Z:" + cameraPosition.z;
 }
+
+//################ INPUT EVENT LISTENERS ##############
+
+spawnDistanceInput.addEventListener('input', function(event) {
+    spawnDistance = parseFloat(event.target.value);
+});
+
+timeMultiplierInput.addEventListener('input', function(event) {
+    let timeMultiplierValue = parseFloat(event.target.value);
+    if(timeMultiplierValue == 0 || timeMultiplierValue == null){
+        timeMultiplier = 1;
+    }else {
+        timeMultiplier = timeMultiplierValue;
+    }
+});
+
+//################ INPUT EVENT LISTENERS ##############
+
