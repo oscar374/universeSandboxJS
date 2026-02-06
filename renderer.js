@@ -88,6 +88,7 @@ start();
 function update(){
     resizeCanvas();
     clear();
+    displayBackground();
     updateCameraPosText();
     renderSceneObjects();
     if (debugLines) displayLines();
@@ -194,6 +195,24 @@ function point({x, y, depth}, radius, imageURL, opacity = 1) {
 
         ctx.restore(); 
     }
+}
+
+function displayBackground() {
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    
+    // We want apparentRadius to equal cx (half the width)
+    // Formula: cx = radius * (50 / depth)
+    // If we set depth to 50, then radius simply equals cx.
+    const targetDepth = 50; 
+    const targetRadius = cx;
+
+    point(
+        { x: cx, y: cy, depth: targetDepth }, 
+        targetRadius, 
+        "assets/images/backgrounds/bg1.jpg", 
+        0.5
+    );
 }
 
 //################ DRAWING AND RENDERING FUNCTIONS ################
